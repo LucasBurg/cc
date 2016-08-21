@@ -5,6 +5,136 @@
     <title>CC</title>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <div style="margin-bottom:10px;">
+            <h1>Aplicativo para razonete</h1>
+            <h2>Inicie adicionando as contas</h2>
+            <input type="text" v-model="nomeConta">
+            <select v-model="tipoConta">
+                <option value="A">Ativo</option>
+                <option value="P">Passivo</option>
+                <option value="R">Resultado</option>
+            </select>
+            <button type="button" v-on:click="addConta">Add conta</button>
+        </div>
+        <div id="wrap-contas">
+            <div v-for="conta in contas" style="border:1px solid #000;margin-bottom:10px;">
+                <h3>{{conta.nome}}</h3>
+                <form>
+                    <input type="text" name="valor{{$index}}" v-model="form[$index].valor" placeholder="Informe o valor">
+                    <input type="radio" name="natureza{{$index}}" value="D" v-model="form[$index].natureza">
+                    <label>D</label>
+                    <input type="radio" name="natureza{{$index}}" value="C" v-model="form[$index].natureza">
+                    <label>C</label>
+                    <button type="button" v-on:click="lancarToConta(conta, $index)">Lancar!</button>
+                </form>
+                <div id="wrap-lancementos" style="display:table;">
+                    <ul style="float:right;">
+                        <li v-for="credito in filterLancamento(conta, 'C')">
+                            {{credito.valor}} {{credito.natureza}} {{credito.lancamento}}
+                        </li>    
+                        <li style="border-top:1px solid #000;">{{conta.totais.creditos}}</li>
+                        <template v-if="conta.totais.creditos > conta.totais.debitos">
+                            <li style="border-top:1px solid #000;">{{conta.totais.conta}}</li>
+                        </template>
+                    </ul> 
+                    <ul style="float:left;">
+                        <li v-for="debito in filterLancamento(conta, 'D')">
+                            {{debito.valor}} {{debito.natureza}} {{debito.lancamento}}
+                        </li>    
+                        <li style="border-top:1px solid #000;">{{conta.totais.debitos}}</li>
+                        <template v-if="conta.totais.debitos > conta.totais.creditos">
+                            <li style="border-top:1px solid #000;">{{conta.totais.conta}}</li>
+                        </template>
+                    </ul>  
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/vue.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                mensagem: 'Ola mundo',
+                form: [],
+                contas: []
+            },
+            methods: {
+                addConta: function() {
+                    var conta = {
+                        nome: this.nomeConta,
+                        tipo: this.tipoConta,
+                        lancamentos: [],
+                        totais: {
+                            creditos: 0.00,
+                            debitos: 0.00,
+                            conta: 0.00,
+                            qtd_creditos: 0,
+                            qtd_debitos: 0
+                        }
+                    };
+                    this.contas.push(conta);
+                    this.nomeConta = '';
+                    this.tipoConta = '';
+                },
+                filterLancamento: function(conta, natureza) {
+                    var results = [];
+                    for (var key in conta.lancamentos) {
+                        var item = conta.lancamentos[key];
+                        if (item.natureza == natureza) {
+                            results.push(item);
+                        } 
+                    }
+                    return results;
+                },
+                lancarToConta: function(conta, index) {
+                    console.log('click lancartoconta');
+                    console.log(index);
+                    var conta = this.contas[index];
+                    conta.lancamentos.push(
+                        {
+                            valor: this.form[index].valor, 
+                            natureza: this.form[index].natureza, 
+                            lancamento: 1
+                        }
+                    );
+
+                    this.form[index].valor = '';
+                    this.form[index].natureza = '';
+                    this.atualizarTotalPorConta(index);
+                },
+                atualizarTotalPorConta: function(index) {
+                    var conta = this.contas[index];
+                    var totalDebitos = 0.00;
+                    var totalCreditos = 0.00;
+                    var totalConta = 0.00;
+                    
+                    for (var key in conta.lancamentos) {
+                        var lancamento = conta.lancamentos[key];
+                        if (lancamento.natureza == 'C') {
+                            totalCreditos += parseFloat(lancamento.valor);
+                        } else if (lancamento.natureza == 'D') {
+                            totalDebitos += parseFloat(lancamento.valor);
+                        }
+                    }
+                    
+                    
+                    if (totalCreditos > totalDebitos) {
+                        totalConta = totalCreditos - totalDebitos;
+                    } else {
+                        totalConta = totalDebitos - totalCreditos;
+                    }
+
+                    conta.totais.conta = totalConta;
+                    conta.totais.creditos = totalCreditos;
+                    conta.totais.debitos = totalDebitos;
+
+
+                }
+            }
+        });
+    </script>
 </body>
 </html>
